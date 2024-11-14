@@ -19,6 +19,7 @@ GREY_VILLAGE = (128, 128, 128)
 DARK_GREEN = (0, 100, 0)
 TEXT_COLOR = (0, 0, 0)
 BACKGROUND_GREEN = (53, 104, 45)
+FOREST_GREEN = (64, 125, 54)
 
 # Police pour l'affichage du texte
 font = pygame.font.SysFont("Arial", 24)
@@ -42,7 +43,7 @@ runway_x = LANDSCAPE_WIDTH // 2 - runway_img.get_width() // 2
 runway_y = LANDSCAPE_HEIGHT // 2 - runway_img.get_height() // 2
 
 # Zone dégagée autour de la piste
-clear_zone_margin = 300
+clear_zone_margin = 150
 clear_zone_rect = pygame.Rect(
     runway_x - clear_zone_margin,
     runway_y - clear_zone_margin,
@@ -99,7 +100,7 @@ def generate_landscape():
 
         terrain_type = random.choice(["forest", "village"])
         if terrain_type == "forest":
-            color = DARK_GREEN
+            color = FOREST_GREEN
             elements.append(("forest_rect", color, pygame.Rect(x, y, width, height)))
             for _ in range(random.randint(5, 15)):
                 tree_x = x + random.randint(0, width)
@@ -130,6 +131,37 @@ def display_flight_info():
     speed_kmh = speed_px_per_frame * 60 * 60 / 1000
     speed_text = font.render(f"Vitesse : {speed_kmh:.1f} km/h", True, TEXT_COLOR)
     window.blit(speed_text, (WIDTH - speed_text.get_width() - 10, 10))
+
+# Fonction pour dessiner un petit aéroport à gauche de la piste
+def draw_airport(plane_x, plane_y):
+    airport_x = runway_x - 300  # À gauche de la piste
+    airport_y = runway_y + 100  # Aligné verticalement avec la piste
+    terminal_rect = pygame.Rect(
+        airport_x - plane_x + WIDTH // 2,
+        airport_y - plane_y + HEIGHT // 2,
+        100, 150
+    )
+    pygame.draw.rect(window, GREY_VILLAGE, terminal_rect)
+
+    hangar_width, hangar_height = 80, 60
+    for i in range(3):  # Trois hangars alignés
+        hangar_rect = pygame.Rect(
+            airport_x + i * (hangar_width + 10) - plane_x + WIDTH // 2,
+            airport_y + 160 - plane_y + HEIGHT // 2,
+            hangar_width,
+            hangar_height
+        )
+        pygame.draw.rect(window, BROWN_FIELD, hangar_rect)
+
+    parking_spacing = 50
+    for i in range(4):  # Quatre emplacements de parking
+        parking_x = airport_x + 110 + i * parking_spacing
+        parking_y = airport_y + 80
+        pygame.draw.rect(window, (255, 255, 255), (
+            parking_x - plane_x + WIDTH // 2,
+            parking_y - plane_y + HEIGHT // 2,
+            40, 20
+        ), 2)
 
 # Fonction pour appliquer la physique
 def apply_physics():
@@ -200,6 +232,9 @@ while True:
 
     # Dessiner la piste de décollage
     window.blit(runway_img, (runway_x - plane_x + WIDTH // 2, runway_y - plane_y + HEIGHT // 2))
+
+    # **Dessiner l'aéroport à gauche de la piste**
+    draw_airport(plane_x, plane_y)
 
     # Dessiner l'avion
     rotated_plane = pygame.transform.rotate(plane_img, plane_rotation)
