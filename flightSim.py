@@ -66,6 +66,17 @@ def get_altitude(x, y):
     frequency = 0.001  # Ajuster pour plus ou moins de montagnes
     noise = math.sin(frequency * x) * math.sin(frequency * y)
     return abs(noise)
+    
+# Forets pas trop proche des champs
+def is_too_close(rect, elements, min_distance):
+    for element in elements:
+        if element[0] in ["rect", "forest_rect"]:  # Vérifier uniquement pour les champs et forêts
+            existing_rect = element[2]
+            distance = math.sqrt((rect.centerx - existing_rect.centerx) ** 2 +
+                                  (rect.centery - existing_rect.centery) ** 2)
+            if distance < min_distance:
+                return True
+    return False
 
 # Fonction pour générer le paysage
 def generate_landscape():
@@ -79,33 +90,48 @@ def generate_landscape():
         if clear_zone_rect.collidepoint(cluster_x, cluster_y) or get_altitude(cluster_x, cluster_y) > 0.4:
             continue
 
-        # Créer des champs regroupés dans une zone agricole
-        for _ in range(random.randint(5, 15)):  # nombre de champs dans une zone
+        for _ in range(random.randint(5, 15)):  # Champs individuels
             x = cluster_x + random.randint(-100, 100)
             y = cluster_y + random.randint(-100, 100)
             width = random.randint(30, 120)
             height = random.randint(20, 80)
             color = random.choice([GREEN_FIELD, BROWN_FIELD])
-            elements.append(("rect", color, pygame.Rect(x, y, width, height)))
+            new_rect = pygame.Rect(x, y, width, height)
 
-    # Générer forêts et villages dans d'autres zones
-    for _ in range(300):
+            if not is_too_close(new_rect, elements, min_distance=20):  # Espacement minimal
+                elements.append(("rect", color, new_rect))
+
+
+        # Générer forêts et villages dans d'autres zones
+    for _ in range(300):  # Générer forêts et villages
         x = random.randint(0, LANDSCAPE_WIDTH)
         y = random.randint(0, LANDSCAPE_HEIGHT)
-        width = random.randint(30, 120)
-        height = random.randint(20, 80)
+        width = random.randint(100, 250)
+        height = random.randint(80, 200)
 
         if clear_zone_rect.collidepoint(x, y) or get_altitude(x, y) > 0.6:
             continue
 
-        terrain_type = random.choice(["forest", "village"])
-        if terrain_type == "forest":
-            color = FOREST_GREEN
-            elements.append(("forest_rect", color, pygame.Rect(x, y, width, height)))
-            for _ in range(random.randint(5, 15)):
-                tree_x = x + random.randint(0, width)
-                tree_y = y + random.randint(0, height)
-                elements.append(("tree", (tree_x, tree_y)))
+        new_rect = pygame.Rect(x, y, width, height)
+        if not is_too_close(new_rect, elements, min_distance=30):  # Espacement minimal pour les forêts
+            terrain_type = random.choice(["forest", "village"])
+            if terrain_type == "forest":
+                color = FOREST_GREEN
+                elements.append(("forest_rect", color, new_rect))
+                for _ in range(random.randint(20, 60)):  # Ajouter des arbres
+                    tree_x = x + random.randint(0, width)
+                    tree_y = y + random.randint(0, height)
+                    elements.append(("tree", (tree_x, tree_y)))
+        elif terrain_type == "village":
+            color = GREY_VILLAGE
+            house_width = random.randint(30, 50)
+            house_height = random.randint(30, 50)
+            for _ in range(random.randint(1, 5)):
+                house_x = x + random.randint(0, width)
+                house_y = y + random.randint(0, height)
+                house_rect = pygame.Rect(house_x, house_y, house_width, house_height)
+                elements.append(("rect", color, house_rect))
+
         elif terrain_type == "village":
             color = GREY_VILLAGE
             house_width = random.randint(30, 50)
